@@ -1,22 +1,25 @@
 import pygame 
 from support import *
-from settings import tile_size, screen_height, screen_width
-from tiles import Tile, StaticTile, Crate, Coin, Palm
-from enemy import Enemy
-from decoration import Sky, Water, Clouds
+from settings import *
+from tiles import StaticTile
+from decoration import Sky, Clouds
 from player import Player
 from particles import ParticleEffect
 from game_data import levels
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
+from hint import Hint
+from pygame.mouse import get_pressed as mouse_button
+from pygame.mouse import get_pos as mouse_pos
 
 class Level:
-	def __init__(self, current_level, surface, create_overworld):
+	def __init__(self, current_level, surface, create_overworld, status_level):
 		# general setup
 		self.cursor = pygame.image.load('./graphics/cursor/selection.png').convert_alpha()
+		self.pickaxe = pygame.image.load('./graphics/cursor/pickaxe.png').convert_alpha()
 		self.display_surface = surface
-		self.world_shift = 0
 		self.current_x = None
+		self.status_level = status_level
 
 		# overworld connection
 		self.create_overworld = create_overworld
@@ -26,6 +29,8 @@ class Level:
 
 		# player 
 		player_layout = import_csv_layout(level_data['player'])
+		self.matrix_player = create_matrix_player(player_layout)
+		self.row_end, self.col_end = get_row_col_matrix_player(self.matrix_player)
 		self.player = pygame.sprite.GroupSingle()
 		self.goal = pygame.sprite.GroupSingle()
 		self.player_setup(player_layout)
@@ -35,19 +40,24 @@ class Level:
 		self.player_on_ground = False
 
 		# terrain setup
-		terrain_layout = import_csv_layout(level_data['terrain'])
-		self.terrain_sprites = self.create_tile_group(terrain_layout,'terrain')
+		terrain_layout = import_csv_layout(level_data[self.status_level])
+		if self.status_level == 'terain':
+			self.terrain_sprites = self.create_tile_group(terrain_layout,'terrain')
+		else:
+			self.terrain_sprites = self.create_tile_group(terrain_layout,'terrain_new')
 		self.matrix = create_matrix(terrain_layout)
-		int_matrix = create_int_export(self.matrix)
-		str_matrix = create_str_export(int_matrix)
-		export_csv_layout(str_matrix, level_data['terrain'])
+
+		# pathfinding
+		self.path = []
 		self.grid = Grid(matrix = self.matrix)
 
 		# decoration 
-		self.sky = Sky(-2)
+		self.sky = Sky(3)
 		level_width = len(terrain_layout[0]) * tile_size
-		self.water = Water(screen_height - 20,level_width)
-		self.clouds = Clouds(400,level_width,30)
+		self.clouds = Clouds(100,level_width,30)
+
+		# hint
+		self.hint = Hint(False)
 
 	def create_tile_group(self,layout,type):
 		sprite_group = pygame.sprite.Group()
@@ -58,7 +68,7 @@ class Level:
 					x = col_index * tile_size
 					y = row_index * tile_size
 
-					if type == 'terrain':
+					if type == 'terrain_new':
 						terrain_tile_list = import_cut_graphics('./graphics/terrain/terrain_tiles.png')
 						tile_surface = terrain_tile_list[int(val)]
 						sprite = StaticTile(tile_size,x,y,tile_surface)
@@ -134,21 +144,6 @@ class Level:
 		if player.on_ceiling and player.direction.y > 0.1:
 			player.on_ceiling = False
 
-	def scroll_x(self):
-		player = self.player.sprite
-		player_x = player.rect.centerx
-		direction_x = player.direction.x
-
-		if player_x < screen_width / 4 and direction_x < 0:
-			self.world_shift = 8
-			player.speed = 0
-		elif player_x > screen_width - (screen_width / 4) and direction_x > 0:
-			self.world_shift = -8
-			player.speed = 0
-		else:
-			self.world_shift = 0
-			player.speed = 8
-
 	def get_player_on_ground(self):
 		if self.player.sprite.on_ground:
 			self.player_on_ground = True
@@ -172,60 +167,130 @@ class Level:
 		if pygame.sprite.spritecollide(self.player.sprite, self.goal, False):
 			self.create_overworld(self.current_level, self.new_max_level)
 
-	def draw_active_cell(self):
+	def show_cell_icon(self):
 		mouse_pos = pygame.mouse.get_pos()
 		row = mouse_pos[1] // 48
 		col = mouse_pos[0] // 48
-		# print(f"{row}, {col}")
+		current_cell_value = self.matrix[row][col]
+		
+		surrounded_cells = self.show_neighbors()
+		
+		if (row, col) in surrounded_cells and surrounded_cells.index((row, col)) != 4:
+			if current_cell_value != 0 and current_cell_value == 1:
+				rect = pygame.Rect((col * 48, row * 48), (48, 48))
+				self.display_surface.blit(self.cursor, rect)
+			elif current_cell_value != 0:
+				rect = pygame.Rect((col * 48, row * 48), (48, 48))
+				self.display_surface.blit(self.pickaxe, rect)
+
+	def add_level_cell(self, row, col):
+		level_data = levels[self.current_level]
 		current_cell_value =  self.matrix[row][col]
-		if not current_cell_value == 99:
-			rect = pygame.Rect((col * 48, row * 48),(48, 48))
-			self.display_surface.blit(self.cursor, rect)
+
+		surrounded_cells = self.show_neighbors()
+		if (row, col) in surrounded_cells and surrounded_cells.index((row, col)) != 4:
+			if current_cell_value != 0 and current_cell_value == 1:
+				self.matrix[row][col] = 3
+			
+				int_matrix = create_int_export(self.matrix, self.current_level)
+				str_matrix = create_str_export(int_matrix)
+				export_csv_layout(str_matrix, level_data['terrain_new'])
+				self.terrain_sprites = self.create_tile_group(str_matrix,'terrain_new')
+
+	def remove_level_cell(self, row, col):
+		level_data = levels[self.current_level]
+		current_cell_value =  self.matrix[row][col]
+
+		surrounded_cells = self.show_neighbors()
+		if (row, col) in surrounded_cells and surrounded_cells.index((row, col)) != 4:
+			if current_cell_value != 0:
+				self.matrix[row][col] = 1
+				
+				int_matrix = create_int_export(self.matrix, self.current_level)
+				str_matrix = create_str_export(int_matrix)
+				export_csv_layout(str_matrix, level_data['terrain_new'])
+				self.terrain_sprites = self.create_tile_group(str_matrix,'terrain_new')
+
+	def get_active_cell(self):
+		mouse_pos = pygame.mouse.get_pos()
+		row = mouse_pos[1] // 48
+		col = mouse_pos[0] // 48
+		return row, col
+
+	def show_neighbors(self):
+		pos_y, pos_x = self.player.sprite.get_coordinate()
+		cluster_size = 3
+		local_cluster = [
+			(pos_x + col - int(cluster_size / 2), pos_y + row - int(cluster_size / 2))
+			for col in range(cluster_size)
+			for row in range(cluster_size)
+		]
+		return local_cluster
 
 	def create_path(self):
-		start_x, start_y = [8, 3]
-		start = self.grid.node(start_x, start_y)
+		start_y, start_x = self.player.sprite.get_coordinate()
+		start = self.grid.node(start_y, start_x)
 		
-		mouse_pos = pygame.mouse.get_pos()
-		goal_x, goal_y = mouse_pos[0] // 48, mouse_pos[1] // 48
-		goal = self.grid.node(goal_x, goal_y)
+		self.col_end, self.row_end = get_row_col_matrix_player(self.matrix_player)
+		end = self.grid.node(self.row_end, self.col_end)
 
 		finder = AStarFinder()
-		self.path,_ = finder.find_path(start, goal, self.grid)
-		print('')
-		print(self.path)
-		print('')
+		self.path,_ = finder.find_path(start, end, self.grid)
+		self.grid.cleanup()
+
+	def draw_path(self):
+		if self.path:
+			points = []
+			for point in self.path:
+				x = (point[0] * 48) + 24
+				y = (point[1] * 48) + 24
+				points.append((x, y))
+			pygame.draw.lines(self.display_surface, 'white', False, points, 5)
+
+	def hint_click(self):
+		if self.hint.rect.collidepoint(mouse_pos()):
+			self.create_path()
+			self.hint.click_bool = True
+
+	def hint_end(self):
+		self.hint.click_bool = False
+
+	def empty_path(self):
+		self.path = []
 
 	def update(self):
-		self.draw_active_cell()
+		self.show_cell_icon()
+		self.get_active_cell()
+		self.show_neighbors()
+		self.draw_path()
 
 	def run(self):
-		# run the entire game / level 
-
 		# sky 
 		self.sky.draw(self.display_surface)
-		self.clouds.draw(self.display_surface,self.world_shift)
+		self.clouds.draw(self.display_surface)
 
 		# terrain 
-		self.terrain_sprites.update(self.world_shift)
+		self.goal.draw(self.display_surface)
+		self.terrain_sprites.update()
 		self.terrain_sprites.draw(self.display_surface)
 		
 		# dust particles 
-		self.dust_sprite.update(self.world_shift)
+		self.dust_sprite.update()
 		self.dust_sprite.draw(self.display_surface)
 
 		# player sprites
 		self.player.update()
 		self.horizontal_movement_collision()
-		
+	
 		self.get_player_on_ground()
 		self.vertical_movement_collision()
 		self.create_landing_dust()
 		
-		# self.scroll_x()
 		self.player.draw(self.display_surface)
-		self.goal.update(self.world_shift)
-		self.goal.draw(self.display_surface)
+		self.goal.update()
+
+		# hint
+		self.hint.display()
 		
 		self.check_death()
 		self.check_win()

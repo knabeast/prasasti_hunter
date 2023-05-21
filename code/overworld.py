@@ -1,7 +1,6 @@
 import pygame 
 from game_data import levels
 from support import import_folder_2
-from decoration import Sky
 
 class Node(pygame.sprite.Sprite):
 	def __init__(self,pos,status,icon_speed, path):
@@ -9,7 +8,6 @@ class Node(pygame.sprite.Sprite):
 		self.frames = import_folder_2(path)
 		self.frame_index = 0
 		self.image = self.frames[self.frame_index]
-		self.image = pygame.Surface((100,80))
 		if status == 'available':
 			self.status = 'available'
 		else:
@@ -29,7 +27,6 @@ class Node(pygame.sprite.Sprite):
 			self.animate()
 		else:
 			tint_surf = self.image.copy()
-			# tint_surf.fill('black')
 			tint_surf.fill('black', None, pygame.BLEND_RGBA_MULT)
 			self.image.blit(tint_surf, (0, 0))	
 
@@ -60,7 +57,6 @@ class Overworld:
 		# sprites 
 		self.setup_nodes()
 		self.setup_icon()
-		# self.sky = Sky(-2)
 
 	def setup_nodes(self):
 		self.nodes = pygame.sprite.Group()
@@ -115,14 +111,12 @@ class Overworld:
 				self.moving = False
 				self.move_direction = pygame.math.Vector2(0,0)
 
-
 	def run(self):
 		self.input()
 		self.update_icon_pos()
 		self.icon.update()
 		self.nodes.update()
 
-		# self.sky.draw(self.display_surface)
 		self.draw_paths()
 		self.nodes.draw(self.display_surface)
 		self.icon.draw(self.display_surface)

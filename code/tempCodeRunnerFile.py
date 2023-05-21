@@ -1,1 +1,2 @@
-			sys.exit()
+
+            self.waiting_left = None

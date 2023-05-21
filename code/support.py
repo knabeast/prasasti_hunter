@@ -1,7 +1,7 @@
+import pygame
 from csv import reader, writer
 from settings import tile_size
-from os import walk
-import pygame
+from os import walk, remove, path
 
 def import_folder(path):
 	surface_list = []
@@ -21,7 +21,7 @@ def import_folder_2(path):
 		for image in image_files:
 			full_path = path + '/' + image
 			image_surf = pygame.image.load(full_path).convert_alpha()
-			image_scale = pygame.transform.scale(image_surf, (100, 100))
+			image_scale = pygame.transform.scale(image_surf, (250, 250))
 			surface_list.append(image_scale)
 
 	return surface_list
@@ -61,27 +61,63 @@ def create_matrix(terrain_layout):
 	for row_index, row in enumerate(matrix):
 		for col_index,val in enumerate(row):
 			if val == -1:
-				matrix[row_index][col_index] = 99
-			elif val == 1:
-				matrix[row_index][col_index] = 98
-			else:
 				matrix[row_index][col_index] = 1
-	print(f"matrix: {matrix}")
+			elif val == 0:
+				matrix[row_index][col_index] = 2
+			elif val == 3:
+				matrix[row_index][col_index] = 2
+			elif val == 6:
+				matrix[row_index][col_index] = 2
+			elif val == 1:
+				matrix[row_index][col_index] = 3
+			elif val == 4:
+				matrix[row_index][col_index] = 3
+			elif val == 7:
+				matrix[row_index][col_index] = 3
+			elif val == 2:
+				matrix[row_index][col_index] = 0
+			elif val == 5:
+				matrix[row_index][col_index] = 0
+			elif val == 8:
+				matrix[row_index][col_index] = 0
 
+	print(f"matrix = {matrix}")
 	return matrix
 
-def create_int_export(matrix):
+def create_int_export(matrix, current_level):
 	copy_matrix = matrix.copy()
 	int_export = [list(map(int,i) ) for i in copy_matrix]
 	for row_index, row in enumerate(int_export):
 		for col_index,val in enumerate(row):
-			if val == 99:
-				int_export[row_index][col_index] = -1
-			elif val == 98:
-				int_export[row_index][col_index] = 1
-			else:
-				int_export[row_index][col_index] = 0
+			if current_level == 0:
+				if val == 1:
+					int_export[row_index][col_index] = -1
+				elif val == 2:
+					int_export[row_index][col_index] = 0
+				elif val == 3:
+					int_export[row_index][col_index] = 1
+				elif val == 0:
+					int_export[row_index][col_index] = 2
+			elif current_level == 1 and current_level == 3:
+				if val == 1:
+					int_export[row_index][col_index] = -1
+				elif val == 2:
+					int_export[row_index][col_index] = 3
+				elif val == 3:
+					int_export[row_index][col_index] = 4
+				elif val == 0:
+					int_export[row_index][col_index] = 5
+			elif current_level == 2 and current_level == 4:
+				if val == 1:
+					int_export[row_index][col_index] = -1
+				elif val == 2:
+					int_export[row_index][col_index] = 6
+				elif val == 3:
+					int_export[row_index][col_index] = 7
+				elif val == 0:
+					int_export[row_index][col_index] = 8
 
+	print(f"csv = {int_export}")
 	return int_export
 
 def create_str_export(int_export):
@@ -90,6 +126,47 @@ def create_str_export(int_export):
 		string_row = [str(val) for val in row]
 		str_export.append(string_row)
 
-	print(f"exported: {str_export}")
-
 	return str_export
+
+def create_matrix_player(player_layout):
+	copy_player_layout = player_layout.copy()
+	matrix_player = [list(map(int,i) ) for i in copy_player_layout]
+	for row_index, row in enumerate(matrix_player):
+		for col_index,val in enumerate(row):
+			if val == -1:
+				matrix_player[row_index][col_index] = 2
+			elif val == 1:
+				matrix_player[row_index][col_index] = 1
+			else:
+				matrix_player[row_index][col_index] = 0
+
+	return matrix_player
+
+def get_row_col_matrix_player(matrix_player):
+	for row_index, row in enumerate(matrix_player):
+		for col_index,val in enumerate(row):
+			if val == 1:
+				return row_index, col_index
+
+def remove_terrain_new():
+	csv_files =	[
+		"./levels/0/level_0_terrain_new.csv", 
+		"./levels/1/level_1_terrain_new.csv", 
+		"./levels/2/level_2_terrain_new.csv", 
+		"./levels/3/level_3_terrain_new.csv", 
+		"./levels/4/level_4_terrain_new.csv"]
+	total_files = len(csv_files)
+	for i in range(total_files):
+		if(path.exists(csv_files[i])):
+			remove(csv_files[i])
+			# print(f"{csv_files[i]} found")
+		else:
+			print(f"{csv_files[i]} not found")
+
+def check_terrain_new(current_level):
+	csv_file = f"./levels/{current_level}/level_{current_level}_terrain_new.csv"
+	if(path.exists(csv_file)):
+		status_level = 'terrain_new'
+	else:
+		status_level = 'terrain'
+	return status_level
