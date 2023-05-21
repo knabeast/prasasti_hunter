@@ -14,6 +14,14 @@ from pygame.mouse import get_pos as mouse_pos
 
 class Level:
 	def __init__(self, current_level, surface, create_overworld, status_level):
+		# audio
+		self.remove_sound = pygame.mixer.Sound('./audio/effects/remove.wav')
+		self.remove_sound.set_volume(0.7)
+		self.add_sound = pygame.mixer.Sound('./audio/effects/add.wav')
+		self.add_sound.set_volume(0.5)
+		self.fall_sound = pygame.mixer.Sound('./audio/effects/fall.wav')
+		self.fall_sound.set_volume(0.2)
+
 		# general setup
 		self.cursor = pygame.image.load('./graphics/cursor/selection.png').convert_alpha()
 		self.pickaxe = pygame.image.load('./graphics/cursor/pickaxe.png').convert_alpha()
@@ -33,7 +41,7 @@ class Level:
 		self.row_end, self.col_end = get_row_col_matrix_player(self.matrix_player)
 		self.player = pygame.sprite.GroupSingle()
 		self.goal = pygame.sprite.GroupSingle()
-		self.player_setup(player_layout)
+		self.player_setup(player_layout, self.current_level)
 
 		# dust 
 		self.dust_sprite = pygame.sprite.GroupSingle()
@@ -41,20 +49,30 @@ class Level:
 
 		# terrain setup
 		terrain_layout = import_csv_layout(level_data[self.status_level])
+		# print(f"{terrain_layout}\n")
+		self.matrix = create_matrix(terrain_layout)
 		if self.status_level == 'terain':
 			self.terrain_sprites = self.create_tile_group(terrain_layout,'terrain')
 		else:
 			self.terrain_sprites = self.create_tile_group(terrain_layout,'terrain_new')
-		self.matrix = create_matrix(terrain_layout)
 
 		# pathfinding
 		self.path = []
 		self.grid = Grid(matrix = self.matrix)
 
 		# decoration 
-		self.sky = Sky(3)
-		level_width = len(terrain_layout[0]) * tile_size
-		self.clouds = Clouds(100,level_width,30)
+		if self.current_level == 0:
+			self.sky = Sky(3, self.current_level)
+			level_width = len(terrain_layout[0]) * tile_size
+			self.clouds = Clouds(100,level_width,15)
+		elif self.current_level == 2:
+			self.sky = Sky(3, self.current_level)
+			level_width = len(terrain_layout[0]) * tile_size
+			self.clouds = Clouds(100,level_width,15)
+		else:
+			self.sky = Sky(0, self.current_level)
+			level_width = len(terrain_layout[0]) * tile_size
+			# self.clouds = Clouds(0,level_width,15)
 
 		# hint
 		self.hint = Hint(False)
@@ -77,16 +95,28 @@ class Level:
 		
 		return sprite_group
 
-	def player_setup(self,layout):
+	def player_setup(self,layout, current_level):
 		for row_index, row in enumerate(layout):
 			for col_index,val in enumerate(row):
 				x = col_index * tile_size
 				y = row_index * tile_size
 				if val == '0':
-					sprite = Player((x,y),self.display_surface,self.create_jump_particles)
+					sprite = Player((x,y),self.display_surface,self.create_jump_particles, self.current_level)
 					self.player.add(sprite)
-				if val == '1':
-					hat_surface = pygame.image.load('./graphics/character/hat.png').convert_alpha()
+				if val == '1' and current_level == 0:
+					hat_surface = pygame.image.load('./graphics/character/1.png').convert_alpha()
+					sprite = StaticTile(tile_size,x,y,hat_surface)
+					self.goal.add(sprite)
+				elif val == '1' and current_level == 1:
+					hat_surface = pygame.image.load('./graphics/character/2.png').convert_alpha()
+					sprite = StaticTile(tile_size,x,y,hat_surface)
+					self.goal.add(sprite)
+				elif val == '1' and current_level == 2:
+					hat_surface = pygame.image.load('./graphics/character/3.png').convert_alpha()
+					sprite = StaticTile(tile_size,x,y,hat_surface)
+					self.goal.add(sprite)
+				elif val == '1' and current_level == 3:
+					hat_surface = pygame.image.load('./graphics/character/4.png').convert_alpha()
 					sprite = StaticTile(tile_size,x,y,hat_surface)
 					self.goal.add(sprite)
 
@@ -100,7 +130,7 @@ class Level:
 			pos -= pygame.math.Vector2(10,5)
 		else:
 			pos += pygame.math.Vector2(10,-5)
-		jump_particle_sprite = ParticleEffect(pos,'jump')
+		jump_particle_sprite = ParticleEffect(pos,'jump', self.current_level)
 		self.dust_sprite.add(jump_particle_sprite)
 
 	def horizontal_movement_collision(self):
@@ -156,7 +186,8 @@ class Level:
 				offset = pygame.math.Vector2(10,15)
 			else:
 				offset = pygame.math.Vector2(-10,15)
-			fall_dust_particle = ParticleEffect(self.player.sprite.rect.midbottom - offset,'land')
+			fall_dust_particle = ParticleEffect(self.player.sprite.rect.midbottom - offset,'land', self.current_level)
+			self.fall_sound.play()
 			self.dust_sprite.add(fall_dust_particle)
 
 	def check_death(self):
@@ -175,7 +206,8 @@ class Level:
 		
 		surrounded_cells = self.show_neighbors()
 		
-		if (row, col) in surrounded_cells and surrounded_cells.index((row, col)) != 4:
+		# if (row, col) in surrounded_cells and surrounded_cells.index((row, col)) != 4:
+		if (row, col) in surrounded_cells:
 			if current_cell_value != 0 and current_cell_value == 1:
 				rect = pygame.Rect((col * 48, row * 48), (48, 48))
 				self.display_surface.blit(self.cursor, rect)
@@ -188,9 +220,13 @@ class Level:
 		current_cell_value =  self.matrix[row][col]
 
 		surrounded_cells = self.show_neighbors()
-		if (row, col) in surrounded_cells and surrounded_cells.index((row, col)) != 4:
+		# if (row, col) in surrounded_cells and surrounded_cells.index((row, col)) != 4:
+		if (row, col) in surrounded_cells:
 			if current_cell_value != 0 and current_cell_value == 1:
 				self.matrix[row][col] = 3
+				self.add_sound.play()
+				# print(f"current level: {self.current_level}")
+				# print('updating level')
 			
 				int_matrix = create_int_export(self.matrix, self.current_level)
 				str_matrix = create_str_export(int_matrix)
@@ -204,7 +240,10 @@ class Level:
 		surrounded_cells = self.show_neighbors()
 		if (row, col) in surrounded_cells and surrounded_cells.index((row, col)) != 4:
 			if current_cell_value != 0:
+				# print(f"current level: {self.current_level}")
+				# print('updating level')
 				self.matrix[row][col] = 1
+				self.remove_sound.play()
 				
 				int_matrix = create_int_export(self.matrix, self.current_level)
 				str_matrix = create_str_export(int_matrix)
@@ -267,7 +306,10 @@ class Level:
 	def run(self):
 		# sky 
 		self.sky.draw(self.display_surface)
-		self.clouds.draw(self.display_surface)
+		if self.current_level == 0:
+			self.clouds.draw(self.display_surface)
+		elif self.current_level == 2:
+			self.clouds.draw(self.display_surface)
 
 		# terrain 
 		self.goal.draw(self.display_surface)

@@ -5,10 +5,28 @@ from support import import_folder
 from random import choice, randint
 
 class Sky:
-	def __init__(self,horizon, style='level'):
-		self.top = pygame.image.load('./graphics/decoration/sky/sky_top.png').convert()
-		self.bottom = pygame.image.load('./graphics/decoration/sky/sky_bottom.png').convert()
-		self.middle = pygame.image.load('./graphics/decoration/sky/sky_middle.png').convert()
+	def __init__(self,horizon, current_level, style='level'):
+		self.current_level = current_level
+		if self.current_level == 0:
+			self.top = pygame.image.load('./graphics/decoration/sky/sky_top.png').convert()
+			self.bottom = pygame.image.load('./graphics/decoration/sky/sky_bottom.png').convert()
+			self.middle = pygame.image.load('./graphics/decoration/sky/sky_middle.png').convert()
+		elif self.current_level == 1:
+			self.top = pygame.image.load('./graphics/decoration/sky/sky_top.png').convert()
+			self.bottom = pygame.image.load('./graphics/decoration/sky/sky_bottom2.png').convert()
+			self.middle = pygame.image.load('./graphics/decoration/sky/sky_middle.png').convert()
+		elif self.current_level == 3:
+			self.top = pygame.image.load('./graphics/decoration/sky/sky_top.png').convert()
+			self.bottom = pygame.image.load('./graphics/decoration/sky/sky_bottom2.png').convert()
+			self.middle = pygame.image.load('./graphics/decoration/sky/sky_middle.png').convert()
+		elif self.current_level == 2:
+			self.top = pygame.image.load('./graphics/decoration/sky/sky_top.png').convert()
+			self.bottom = pygame.image.load('./graphics/decoration/sky/sky_bottom2.png').convert()
+			self.middle = pygame.image.load('./graphics/decoration/sky/sky_middle.png').convert()
+		elif self.current_level == 4:
+			self.top = pygame.image.load('./graphics/decoration/sky/sky_top.png').convert()
+			self.bottom = pygame.image.load('./graphics/decoration/sky/sky_bottom2.png').convert()
+			self.middle = pygame.image.load('./graphics/decoration/sky/sky_middle.png').convert()
 		self.horizon = horizon
 
 		# stretch 

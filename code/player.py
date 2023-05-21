@@ -2,9 +2,10 @@ import pygame
 from support import import_folder
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, surface, create_jump_particles):
+    def __init__(self, pos, surface, create_jump_particles, current_level):
         super().__init__()
         self.import_character_assets()
+        self.current_level = current_level
         self.frame_index = 0
         self.animation_speed = 0.21
         self.image = self.animations['idle'][self.frame_index]
@@ -12,7 +13,7 @@ class Player(pygame.sprite.Sprite):
         self.path = []
 
         # dust particles
-        self.import_dust_run_particles()
+        self.import_dust_run_particles(self.current_level)
         self.dust_frame_index = 0
         self.dust_animation_speed = 0.15
         self.display_surface = surface
@@ -25,13 +26,13 @@ class Player(pygame.sprite.Sprite):
         self.attacking = False
         self.waiting_left = None
         self.waiting_right = None
-        self.attack_duration = 0
+        self.attack_duration = 700
 
         # player movement
         self.direction = pygame.math.Vector2(0, 0)
-        self.speed = 3
-        self.gravity = 0.7
-        self.jump_speed = -12
+        self.speed = 4
+        self.gravity = 0.8
+        self.jump_speed = -10
 
         # player status
         self.status = 'idle'
@@ -42,6 +43,9 @@ class Player(pygame.sprite.Sprite):
         self.on_right = False
         self.can_move = True 
 
+        # audio
+        self.run_sound = pygame.mixer.Sound('./audio/effects/run.wav')
+        
     def import_character_assets(self):
         character_path = './graphics/character/'
         self.animations = {'idle': [], 'run': [], 'jump': [], 'fall': []}
@@ -50,8 +54,11 @@ class Player(pygame.sprite.Sprite):
             full_path = character_path + animation
             self.animations[animation] = import_folder(full_path)
 
-    def import_dust_run_particles(self):
-        self.dust_run_particles = import_folder('./graphics/character/dust_particles/run')
+    def import_dust_run_particles(self, current_level):
+        if current_level == 0:
+            self.dust_run_particles = import_folder('./graphics/character/dust_particles/run') 
+        else:
+            self.dust_run_particles = import_folder('./graphics/character/dust_particles/run2') 
 
     def import_attack_particles(self):
         self.attack_particles = import_folder('./graphics/character/attack')
@@ -116,12 +123,13 @@ class Player(pygame.sprite.Sprite):
 
     def get_input(self):
         keys = pygame.key.get_pressed()
-        mouse_buttons = pygame.mouse.get_pressed()
 
         if keys[pygame.K_d]:
             self.direction.x = 1
+            self.run_sound.play()
             self.facing_right = True
         elif keys[pygame.K_a]:
+            self.run_sound.play()
             self.direction.x = -1
             self.facing_right = False
         else:

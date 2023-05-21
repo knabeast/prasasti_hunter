@@ -64,8 +64,6 @@ def create_matrix(terrain_layout):
 				matrix[row_index][col_index] = 1
 			elif val == 0:
 				matrix[row_index][col_index] = 2
-			elif val == 3:
-				matrix[row_index][col_index] = 2
 			elif val == 6:
 				matrix[row_index][col_index] = 2
 			elif val == 1:
@@ -81,7 +79,7 @@ def create_matrix(terrain_layout):
 			elif val == 8:
 				matrix[row_index][col_index] = 0
 
-	print(f"matrix = {matrix}")
+	# print(f"{matrix}\n")
 	return matrix
 
 def create_int_export(matrix, current_level):
@@ -98,16 +96,30 @@ def create_int_export(matrix, current_level):
 					int_export[row_index][col_index] = 1
 				elif val == 0:
 					int_export[row_index][col_index] = 2
-			elif current_level == 1 and current_level == 3:
+			elif current_level == 1:
 				if val == 1:
 					int_export[row_index][col_index] = -1
-				elif val == 2:
-					int_export[row_index][col_index] = 3
 				elif val == 3:
 					int_export[row_index][col_index] = 4
 				elif val == 0:
 					int_export[row_index][col_index] = 5
-			elif current_level == 2 and current_level == 4:
+			elif current_level == 2:
+				if val == 1:
+					int_export[row_index][col_index] = -1
+				elif val == 2:
+					int_export[row_index][col_index] = 6
+				elif val == 3:
+					int_export[row_index][col_index] = 7
+				elif val == 0:
+					int_export[row_index][col_index] = 8
+			elif current_level == 3:
+				if val == 1:
+					int_export[row_index][col_index] = -1
+				elif val == 3:
+					int_export[row_index][col_index] = 4
+				elif val == 0:
+					int_export[row_index][col_index] = 5
+			elif current_level == 4:
 				if val == 1:
 					int_export[row_index][col_index] = -1
 				elif val == 2:
@@ -117,7 +129,7 @@ def create_int_export(matrix, current_level):
 				elif val == 0:
 					int_export[row_index][col_index] = 8
 
-	print(f"csv = {int_export}")
+	# print(f"{int_export}")
 	return int_export
 
 def create_str_export(int_export):
