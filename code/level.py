@@ -77,6 +77,43 @@ class Level:
 		# hint
 		self.hint = Hint(False)
 
+		self.waiting_left = None
+		self.waiting_right = None
+		self.waiting_middle = None
+		self.attack_duration = 700
+		self.row = None
+		self.col = None
+
+	def check_mouse_left_click(self):
+		if mouse_button()[0]:
+			self.row, self.col = self.get_active_cell()
+			self.waiting_left = pygame.time.get_ticks() + self.attack_duration
+
+		if self.waiting_left and pygame.time.get_ticks() >= self.waiting_left:
+			self.remove_level_cell(self.row, self.col)
+			self.waiting_left = None
+
+	def check_mouse_right_click(self):
+		if mouse_button()[2]:
+			self.row, self.col = self.get_active_cell()
+			self.waiting_right = pygame.time.get_ticks() + self.attack_duration
+
+		if self.waiting_right and pygame.time.get_ticks() >= self.waiting_right:
+			self.add_level_cell(self.row, self.col)
+			self.waiting_right = None
+			
+			self.hint_click()
+
+	def check_mouse_middle_click(self):
+		if mouse_button()[1]:
+			self.hint_click()
+			self.waiting_middle = pygame.time.get_ticks() + self.attack_duration
+
+		if self.waiting_middle and pygame.time.get_ticks() >= self.waiting_middle:
+			self.empty_path()
+			self.hint_end()
+			self.waiting_middle = None
+
 	def create_tile_group(self,layout,type):
 		sprite_group = pygame.sprite.Group()
 
@@ -117,6 +154,10 @@ class Level:
 					self.goal.add(sprite)
 				elif val == '1' and current_level == 3:
 					hat_surface = pygame.image.load('./graphics/character/4.png').convert_alpha()
+					sprite = StaticTile(tile_size,x,y,hat_surface)
+					self.goal.add(sprite)
+				elif val == '1' and current_level == 4:
+					hat_surface = pygame.image.load('./graphics/character/5.png').convert_alpha()
 					sprite = StaticTile(tile_size,x,y,hat_surface)
 					self.goal.add(sprite)
 
@@ -337,3 +378,7 @@ class Level:
 		self.check_death()
 		self.check_win()
 		self.update()
+
+		self.check_mouse_left_click()
+		self.check_mouse_right_click()
+		self.check_mouse_middle_click()

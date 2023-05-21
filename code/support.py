@@ -173,7 +173,7 @@ def remove_terrain_new():
 			remove(csv_files[i])
 			# print(f"{csv_files[i]} found")
 		else:
-			print(f"{csv_files[i]} not found")
+			pass
 
 def check_terrain_new(current_level):
 	csv_file = f"./levels/{current_level}/level_{current_level}_terrain_new.csv"

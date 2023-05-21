@@ -10,7 +10,7 @@ class Hint:
     def create_buttons(self):
         size = 48
         margin = 24
-        topleft = (screen_width/2 - size/2 - margin/2, screen_height - size - margin)
+        topleft = (screen_width/2 - size/2 - margin/2, screen_height - size)
         # topleft = (screen_width/2 - size/2 - margin/2, size/2 + margin/2)
         # topleft = (screen_width - size - margin, size/2 + margin/2)
         self.rect = pygame.Rect(topleft, (size, size))

@@ -7,7 +7,7 @@ class Player(pygame.sprite.Sprite):
         self.import_character_assets()
         self.current_level = current_level
         self.frame_index = 0
-        self.animation_speed = 0.21
+        self.animation_speed = 0.24
         self.image = self.animations['idle'][self.frame_index]
         self.rect = self.image.get_rect(topleft=pos)
         self.path = []
@@ -45,6 +45,7 @@ class Player(pygame.sprite.Sprite):
 
         # audio
         self.run_sound = pygame.mixer.Sound('./audio/effects/run.wav')
+        self.run_sound_playing = False
         
     def import_character_assets(self):
         character_path = './graphics/character/'
@@ -126,18 +127,32 @@ class Player(pygame.sprite.Sprite):
 
         if keys[pygame.K_d]:
             self.direction.x = 1
-            self.run_sound.play()
+            # self.run_sound.play(loops= 1)
             self.facing_right = True
         elif keys[pygame.K_a]:
-            self.run_sound.play()
+            # self.run_sound.play(loops= 1)
             self.direction.x = -1
             self.facing_right = False
         else:
             self.direction.x = 0
+            self.run_sound.stop()
 
         if keys[pygame.K_SPACE] and self.on_ground:
             self.jump()
             self.create_jump_particles(self.rect.midbottom)
+            self.run_sound.stop()
+
+    def play_run_sound(self):
+        if not self.run_sound_playing:
+            self.run_sound.play(loops= -1)
+            self.run_sound_playing = True
+
+    def is_running(self):
+        if self.status == 'run' and self.on_ground and self.direction.x != 0:
+            self.play_run_sound()
+        else:
+            self.run_sound_playing = False
+
 
     def get_status(self):
         if self.direction.y < 0:
@@ -159,6 +174,8 @@ class Player(pygame.sprite.Sprite):
 
     def attack(self):
         self.attacking = True
+        self.direction.x = 0
+        self.run_sound.stop()
 
     def set_movement_enabled(self, enabled):
         self.can_move = enabled
@@ -195,6 +212,7 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         if self.can_move:
             self.get_input()
+        self.is_running()
         self.get_status()
         self.animate()
         self.run_dust_animation()
