@@ -59,6 +59,7 @@ class Level:
 		# pathfinding
 		self.path = []
 		self.grid = Grid(matrix = self.matrix)
+		self.heuristic = 0
 
 		# decoration 
 		if self.current_level == 0:
@@ -111,8 +112,12 @@ class Level:
 
 		if self.waiting_middle and pygame.time.get_ticks() >= self.waiting_middle:
 			self.empty_path()
+			self.heuristic = 0
 			self.hint_end()
 			self.waiting_middle = None
+
+		elif self.waiting_middle and pygame.time.get_ticks() <= self.waiting_middle:
+			self.draw_path()
 
 	def create_tile_group(self,layout,type):
 		sprite_group = pygame.sprite.Group()
@@ -316,6 +321,8 @@ class Level:
 
 		finder = AStarFinder()
 		self.path,_ = finder.find_path(start, end, self.grid)
+		self.heuristic = len(self.path)
+		print(self.heuristic)
 		self.grid.cleanup()
 
 	def draw_path(self):
@@ -329,7 +336,7 @@ class Level:
 
 	def hint_click(self):
 		if self.hint.rect.collidepoint(mouse_pos()):
-			self.create_path()
+			# self.create_path()
 			self.hint.click_bool = True
 
 	def hint_end(self):
@@ -339,10 +346,10 @@ class Level:
 		self.path = []
 
 	def update(self):
+		self.create_path()
 		self.show_cell_icon()
 		self.get_active_cell()
 		self.show_neighbors()
-		self.draw_path()
 
 	def run(self):
 		# sky 
