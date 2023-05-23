@@ -10,7 +10,7 @@ class Hint:
     def create_buttons(self):
         size = 48
         margin = 24
-        topleft = (screen_width/2 - size/2 - margin/2, screen_height - size)
+        topleft = (screen_width/2 + 36, screen_height - size)
         # topleft = (screen_width/2 - size/2 - margin/2, size/2 + margin/2)
         # topleft = (screen_width - size - margin, size/2 + margin/2)
         self.rect = pygame.Rect(topleft, (size, size))
@@ -25,11 +25,15 @@ class Hint:
         Button(self.hint_button_rect, self.hint_button)
 
     def highlight(self):
-        pygame.draw.rect(self.display_surface, '#f5f1de', self.hint_button_rect.inflate(4, 4), 5, 4)
+        pygame.draw.rect(self.display_surface, '#E6E6E6', self.hint_button_rect.inflate(4, 4), 5, 4)
+
+    def broder(self):
+        pygame.draw.rect(self.display_surface, '#807F8A', self.hint_button_rect.inflate(4, 4), 5, 4)
 
     def display(self):
         self.hint_button.update()
         self.hint_button.draw(self.display_surface)
+        self.broder()
         if self.click_bool:
             self.highlight()
 

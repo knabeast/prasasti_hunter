@@ -6,6 +6,7 @@ from level import Level
 from overworld import Overworld
 from support import check_terrain_new, remove_terrain_new
 from button import Button
+from distance import Distance
 
 class Game:
     def __init__(self):
@@ -22,6 +23,9 @@ class Game:
         # self.status = 'overworld'
         self.status = 'menu'
         self.bg_sound.play(loops=-1)
+
+        # distance
+        self.distance = Distance(screen)
 
     def create_level(self, current_level):
         self.status_level = check_terrain_new(current_level)
@@ -74,6 +78,7 @@ class Game:
             self.overworld.run()
         else:
             self.level.run()
+            self.distance.show_distance(self.level.distance)
 
 # Pygame setup
 pygame.init()

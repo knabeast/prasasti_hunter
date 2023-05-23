@@ -208,6 +208,9 @@ class Player(pygame.sprite.Sprite):
         col = self.rect.centerx // 48
         row = self.rect.centery // 48
         return col, row
+    
+    def stop_run_sound(self):
+        self.run_sound.stop()
 
     def update(self):
         if self.can_move:

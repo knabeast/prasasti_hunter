@@ -59,7 +59,7 @@ class Level:
 		# pathfinding
 		self.path = []
 		self.grid = Grid(matrix = self.matrix)
-		self.heuristic = 0
+		self.distance = 0
 
 		# decoration 
 		if self.current_level == 0:
@@ -106,13 +106,12 @@ class Level:
 			self.hint_click()
 
 	def check_mouse_middle_click(self):
-		if mouse_button()[1]:
+		if mouse_button()[1] and self.hint.rect.collidepoint(mouse_pos()):
 			self.hint_click()
 			self.waiting_middle = pygame.time.get_ticks() + self.attack_duration
 
 		if self.waiting_middle and pygame.time.get_ticks() >= self.waiting_middle:
 			self.empty_path()
-			self.heuristic = 0
 			self.hint_end()
 			self.waiting_middle = None
 
@@ -237,12 +236,16 @@ class Level:
 			self.dust_sprite.add(fall_dust_particle)
 
 	def check_death(self):
+		player = self.player.sprite
 		if self.player.sprite.rect.top > screen_height:
 			self.create_overworld(self.current_level, 0)
+			player.stop_run_sound()
 
 	def check_win(self):
+		player = self.player.sprite
 		if pygame.sprite.spritecollide(self.player.sprite, self.goal, False):
 			self.create_overworld(self.current_level, self.new_max_level)
+			player.stop_run_sound()
 
 	def show_cell_icon(self):
 		mouse_pos = pygame.mouse.get_pos()
@@ -314,16 +317,16 @@ class Level:
 
 	def create_path(self):
 		start_y, start_x = self.player.sprite.get_coordinate()
-		start = self.grid.node(start_y, start_x)
-		
-		self.col_end, self.row_end = get_row_col_matrix_player(self.matrix_player)
-		end = self.grid.node(self.row_end, self.col_end)
+		if 0 <= start_y<= len(self.matrix[0]) and 0 <= start_x <= len(self.matrix[1]):
+			start = self.grid.node(start_y, start_x)
+			
+			self.col_end, self.row_end = get_row_col_matrix_player(self.matrix_player)
+			end = self.grid.node(self.row_end, self.col_end)
 
-		finder = AStarFinder()
-		self.path,_ = finder.find_path(start, end, self.grid)
-		self.heuristic = len(self.path)
-		print(self.heuristic)
-		self.grid.cleanup()
+			finder = AStarFinder()
+			self.path,_ = finder.find_path(start, end, self.grid)
+			self.distance = len(self.path)
+			self.grid.cleanup()
 
 	def draw_path(self):
 		if self.path:
@@ -332,7 +335,7 @@ class Level:
 				x = (point[0] * 48) + 24
 				y = (point[1] * 48) + 24
 				points.append((x, y))
-			pygame.draw.lines(self.display_surface, 'white', False, points, 5)
+			pygame.draw.lines(self.display_surface, '#E6E6E6', False, points, 5)
 
 	def hint_click(self):
 		if self.hint.rect.collidepoint(mouse_pos()):
